@@ -18,6 +18,9 @@ set -x
 #TODO flag for choosing between full clone and --reference?
 #TODO nix based tests (dont really see any other way to get reproable tests with this?) <- hand-checking if a result looks ok paradigm, as opposed to property based
 #TODO pruning unnecessary old nixpkgs branches?
+#TODO add exit traps for worktree cleanup
+
+#TODO add creating initial system branch
 
 ################################################################################
 #### Constants
@@ -25,6 +28,7 @@ set -x
 CHANNELS_BRANCH="channels"
 REPO_UTILS_BRANCH="repo_utils"
 CONFIGURATION_BRANCH="configuration"
+SYSTEM_BRANCH="system"
 NIXOS_CURRENT="nixos-19.09"
 #///////////////////////////////////////////////////////////////////////////////
 #/// Constants
@@ -90,10 +94,13 @@ git_commit_all(){
 # Note, git doesn't allow having the same branch checked out in multiple worktrees. https://stackoverflow.com/questions/41545293/branch-is-already-checked-out-at-other-location-in-git-worktrees
 # TODO note this also means you cant run muliple operations that use this on the same branch at once, i need to figure out a better way to do the wrapping, or just check if we're already in the same place...
 # This function should be paired with close_temp_worktree
-#   retFile=$(mktemp)
+#   local retFile
+#   retFile=$(mktemp -t "worktree.XXXXXXXX")
 #   new_temp_worktree "$CHANNELS_BRANCH" "$retFile"
-#   tempLoc=$(cat retFile)
+#   local tempLoc
+#   tempLoc=$(cat $retFile)
 #   close_temp_worktree "$tempLoc"
+#   rm "$retFile"
 # retFile is used because bash's way of returning values from functions sucks. This also sucks but at least I dont have to fight with I/O descriptors
 new_temp_worktree(){
   local branch
@@ -142,7 +149,7 @@ init_channellike(){
   #currentLoc="$PWD" #TODO
 
   local retFile
-  retFile=$(mktemp)
+  retFile=$(mktemp -t "worktree.XXXXXXXX")
   new_temp_worktree "$CHANNELS_BRANCH" "$retFile"
   local tempLoc
   tempLoc=$(cat "$retFile") #TODO might need to make this a lazy operation if this is slow and the same branch needs to be used multiple times; i.e. lazy build and GC at the end of the script
@@ -161,7 +168,7 @@ init_channellike(){
 
 update_channels(){
   local retFile
-  retFile=$(mktemp)
+  retFile=$(mktemp -t "worktree.XXXXXXXX")
   new_temp_worktree "$CHANNELS_BRANCH" "$retFile"
   local tempLoc
   tempLoc=$(cat "$retFile") #TODO might need to make this a lazy operation if this is slow and the same branch needs to be used multiple times; i.e. lazy build and GC at the end of the script
@@ -193,7 +200,7 @@ update_channels(){
 
 setup_channels(){
   local retFile
-  retFile=$(mktemp)
+  retFile=$(mktemp -t "worktree.XXXXXXXX")
   new_temp_worktree "$CHANNELS_BRANCH" "$retFile"
   local tempLoc
   tempLoc=$(cat "$retFile") #TODO might need to make this a lazy operation if this is slow and the same branch needs to be used multiple times; i.e. lazy build and GC at the end of the script
@@ -216,7 +223,7 @@ setup_channels(){
 
 setup_configuration(){
   local retFile
-  retFile=$(mktemp)
+  retFile=$(mktemp -t "worktree.XXXXXXXX")
   new_temp_worktree "$CONFIGURATION_BRANCH" "$retFile"
   local tempLoc
   tempLoc=$(cat "$retFile") #TODO might need to make this a lazy operation if this is slow and the same branch needs to be used multiple times; i.e. lazy build and GC at the end of the script
@@ -245,7 +252,7 @@ setup_repo_utils(){
   self_path="$1"
 
   local retFile
-  retFile=$(mktemp)
+  retFile=$(mktemp -t "worktree.XXXXXXXX")
   new_temp_worktree "$REPO_UTILS_BRANCH" "$retFile"
   local tempLoc
   tempLoc=$(cat "$retFile") #TODO might need to make this a lazy operation if this is slow and the same branch needs to be used multiple times; i.e. lazy build and GC at the end of the script

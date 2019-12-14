@@ -1,0 +1,37 @@
+     R           R              R                         R (main branch?)(declarative meta)
+     +           +              +                         +                make as many things
+     |           |              |                         |                first class objects
+ +---+---+   +---+----+     +---+----+                +---+------+         as possible
+ |nixpkgs|   |channels|     | config |                |repo utils|
+ +--+----+   +---+----+     +--------+                +---+------+
+    |            |            |docs                       |
+    |            |            +-+modules                  +--+build_system_config_worktree.sh
+    |commitA<--- ++stable     +-+config                      |bootstrap_repo.sh     +
+    -commitB<---  +unstable       +-----+nodes               |channel scripts       |
+                                        |interconnect        -docs                  |
+                                        +tests                                      |
+                                                                                    |
++                                        +                                          |
++------+---------------------------------+ <----------------------------------------+
+       | merge orthogonal components into
+       v branch and put in worktree as input
+   +---+--+  to nixos-rebuild
+   |system|
+   +-+----+
+     |
+     |
+     |commitC
+     -commitD
+
+Design goals:(ok more like goals and random feature list)
+- the repository structure should be first class (clarify)
+- always have a valid configuration (needs clarification)
+- pure merging of orthogonal components (not really a goal per se)
+    - overlay handling system
+- declarative manipulation of upstream
+    - PR "importer" (file patcher? -> IFD)
+    - module patcher
+- linting (-> fancy nixos-rebuild clone)
+- out of band private information (search script)
+- IO monad+evaluation style purely functional networking definition (FRP?)
+   + distributed system cannot have an externally imposed consistent state
