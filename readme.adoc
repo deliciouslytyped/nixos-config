@@ -1,0 +1,6 @@
+What is this madness?
+
+See repo_utils branch for build tooling and docs/repo-design.md for an explanation.
+See channels branch for nixpkgs versions pinned using git
+See configuration branch for .nix files
+
