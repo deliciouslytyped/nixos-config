@@ -1,0 +1,58 @@
+#! /usr/bin/env bash
+set -euo pipefail
+# defined in bootstrap.sh
+set -x
+CHANNELS_BRANCH="channels"
+git_commit_all () 
+{ 
+    local message;
+    message="$1";
+    if [ -z "$(git status --porcelain)" ]; then
+        echo "Workdir clean";
+    else
+        git add -A;
+        git commit -m "$message";
+    fi
+}
+new_temp_worktree () 
+{ 
+    local branch;
+    branch="$1";
+    local retTarget;
+    retTarget="$2";
+    local target;
+    target=$(mktemp -d -t "worktree.XXXXXXXX");
+    git worktree add "$target"/"$branch" "$branch";
+    echo "$target"/"$branch" >> "$retTarget"
+}
+close_temp_worktree () 
+{ 
+    local target;
+    target="$1";
+    git worktree remove "$target";
+    rm -rf "$(dirname "$target")"
+}
+update_channels () 
+{ 
+    local retFile;
+    retFile=$(mktemp);
+    new_temp_worktree "$CHANNELS_BRANCH" "$retFile";
+    local tempLoc;
+    tempLoc=$(cat "$retFile");
+    pushd "$tempLoc";
+    for i in */;
+    do
+        local branch;
+        branch="${i%-=-=-*}";
+        local upstream_;
+        upstream_="${i##*-=-=-}";
+        local upstream;
+        upstream="${upstream_%*/}";
+        git subtree pull --prefix "$i" "$upstream" "$branch";
+    done;
+    git_commit_all "updated channels";
+    popd;
+    close_temp_worktree "$tempLoc";
+    rm "$retFile"
+}
+update_channels
