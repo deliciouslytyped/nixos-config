@@ -1,2 +1,6 @@
 warn about dirty repos on build somehow, it seems possible to enumerate worktrees
 TODO: script for generating a system branch / have it be automatic for activate
+
+branch selection
+tests
+value inspection without full rebuild / with repl

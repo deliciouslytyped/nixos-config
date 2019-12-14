@@ -2,6 +2,8 @@
 set -euo pipefail
 set -x
 
+#TODO permanent system worktree so dont have to wait for recheckout
+
 #TODO shellcheck
 #TODO add branch flags
 #TODO channel enumeration?
@@ -23,17 +25,19 @@ set -x
 make_system_config(){
   #TODO warn if branch worktree contains uncomitted changes using git worktree list
   git merge -X theirs --allow-unrelated-histories --no-edit "$CONFIGURATION_BRANCH" || true #TODO temporary hacks in case no changes
-  git subtree merge --squash --prefix "channels" "$CHANNELS_BRANCH" || true
+  git subtree merge --squash --prefix "channels" "$CHANNELS_BRANCH" || true #TODO figure out how to --no-edit
   }
 
 build_system(){
-  local retFile
-  retFile=$(mktemp -t "worktree.XXXXXXXX")
-  new_temp_worktree "$SYSTEM_BRANCH" "$retFile"
+  #TODO speedhack
+  # local retFile
+  # retFile=$(mktemp -t "worktree.XXXXXXXX")
+  # new_temp_worktree "$SYSTEM_BRANCH" "$retFile"
   local tempLoc
-  tempLoc=$(cat "$retFile")
-  #TODO make it possible to disable trap, alternatively, prompty y/N to leave around worktree
-  trap 'close_temp_worktree "$tempLoc"' EXIT #TODO not sure if the quoting is correct here # redsymbol.net/articles/unofficial-bash-strict-mode/#essential-cleanup redsymbol.net/articles/bash-exit-traps/ https://stackoverflow.com/questions/9504662/trap-function-by-passing-arguments
+  # tempLoc=$(cat "$retFile")
+  # #TODO make it possible to disable trap, alternatively, prompty y/N to leave around worktree
+  # trap 'close_temp_worktree "$tempLoc"' EXIT #TODO not sure if the quoting is correct here # redsymbol.net/articles/unofficial-bash-strict-mode/#essential-cleanup redsymbol.net/articles/bash-exit-traps/ https://stackoverflow.com/questions/9504662/trap-function-by-passing-arguments
+  tempLoc=$SYSBRANCHDIR 
   pushd "$tempLoc"
 
   make_system_config
@@ -49,9 +53,9 @@ build_system(){
   actually_build "$tempLoc" "$@"
 
   popd
-  close_temp_worktree "$tempLoc"
-  rm "$retFile"
-  trap - EXIT
+  # close_temp_worktree "$tempLoc"
+  # rm "$retFile"
+  # trap - EXIT
   }
 
 find_private(){
@@ -62,9 +66,10 @@ find_private(){
 #TODO something is super fucky about how tihs stuff works
 actually_build(){
   local unstable
-  unstable="channels/$NIXOS_CURRENT-=-=-nixpkgs-channels" #TODO fix the path hacks in bootstrap
+  unstable="channels/nixos-unstable-=-=-nixpkgs-channels" #TODO fix the path hacks in bootstrap
   local stable
-  stable="channels/nixos-unstable-=-=-nixpkgs-channels"
+  # stable="channels/$NIXOS_CURRENT-=-=-nixpkgs-channels"
+  stable=channel:nixos-unstable
   local d
   d="$1"
   local sys
@@ -76,7 +81,7 @@ actually_build(){
   link="$(mktemp -d -t "buildsys.XXXXXXXX")/result"
   NIX_PATH="unstable=$unstable:nixpkgs=$stable:nixos-config=$d/nodes/$sys/configuration.nix:$d" \
     PRIVATE="$(find_private)" \
-    nix build -v -f '<nixpkgs/nixos>' --out-link "$link" "$@" vm
+    nix build --show-trace -v -f '<nixpkgs/nixos>' --out-link "$link" "$@" vm
   }
 
 activate(){

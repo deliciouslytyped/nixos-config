@@ -52,6 +52,7 @@ init_repo(){
   }
 
 
+#This is necessary because the repository already exists and --reference is a flag only for clone AFAICT
 # https://git-scm.com/docs/gitrepository-layout
 add_alternates(){
   # TODO conditional on cache existing or something
