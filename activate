@@ -2,6 +2,10 @@
 set -euo pipefail
 set -x
 
+#Load lib.sh functions
+. "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/lib.sh
+
+#TODO "--impure" option or something for speeeeed
 #TODO permanent system worktree so dont have to wait for recheckout
 
 #TODO shellcheck
@@ -30,15 +34,11 @@ make_system_config(){
 
 build_system(){
   #TODO speedhack
-  # local retFile
-  # retFile=$(mktemp -t "worktree.XXXXXXXX")
-  # new_temp_worktree "$SYSTEM_BRANCH" "$retFile"
-  local tempLoc
-  # tempLoc=$(cat "$retFile")
+  local retVal=$SYSBRANCHDIR
+  # new_temp_worktree "$SYSTEM_BRANCH"
   # #TODO make it possible to disable trap, alternatively, prompty y/N to leave around worktree
-  # trap 'close_temp_worktree "$tempLoc"' EXIT #TODO not sure if the quoting is correct here # redsymbol.net/articles/unofficial-bash-strict-mode/#essential-cleanup redsymbol.net/articles/bash-exit-traps/ https://stackoverflow.com/questions/9504662/trap-function-by-passing-arguments
-  tempLoc=$SYSBRANCHDIR 
-  pushd "$tempLoc"
+  # trap 'close_temp_worktree "$retVal"' EXIT #TODO not sure if the quoting is correct here # redsymbol.net/articles/unofficial-bash-strict-mode/#essential-cleanup redsymbol.net/articles/bash-exit-traps/ https://stackoverflow.com/questions/9504662/trap-function-by-passing-arguments
+  pushd "$retVal"
 
   make_system_config
 
@@ -46,15 +46,14 @@ build_system(){
   if [ "$#" -eq 0 ]; then
       echo -e "\e[31;1merror:\e[0m must specify a system definition" >&2
       echo "Available system definitions are:" >&2
-      find "$tempLoc"/nodes/*/ -maxdepth 1 -name 'configuration.nix' | awk -F / '{print "- " $(NF-1)}' | sed 's/\.nix$//' >&2
+      find "$retVal"/nodes/*/ -maxdepth 1 -name 'configuration.nix' | awk -F / '{print "- " $(NF-1)}' | sed 's/\.nix$//' >&2
       exit 1
   fi
 
-  actually_build "$tempLoc" "$@"
+  actually_build "$retVal" "$@"
 
   popd
-  # close_temp_worktree "$tempLoc"
-  # rm "$retFile"
+  # close_temp_worktree "$retVal"
   # trap - EXIT
   }
 
@@ -65,15 +64,11 @@ find_private(){
 #TODO why is this so slow and no output??
 #TODO something is super fucky about how tihs stuff works
 actually_build(){
-  local unstable
-  unstable="channels/nixos-unstable-=-=-nixpkgs-channels" #TODO fix the path hacks in bootstrap
-  local stable
+  local unstable="channels/nixos-unstable-=-=-nixpkgs-channels" #TODO fix the path hacks in bootstrap
+  local stable=channel:nixos-unstable
   # stable="channels/$NIXOS_CURRENT-=-=-nixpkgs-channels"
-  stable=channel:nixos-unstable
-  local d
-  d="$1"
-  local sys
-  sys="$2"
+  local d="$1"
+  local sys="$2"
   shift
   shift
 
@@ -91,49 +86,6 @@ activate(){
   nix-env -p /nix/var/nix/profiles/system --set "$path"
   exec "$path/bin/switch-to-configuration" boot
   }
-
-#TODO copied from bootstrap.sh, move to lib
-################################################################################
-#### cannibalized from bootstrap
-################################################################################
-
-CHANNELS_BRANCH="channels"
-CONFIGURATION_BRANCH="configuration"
-SYSTEM_BRANCH="system"
-NIXOS_CURRENT="nixos-19.09"
-
-# Create temporary worktree so we can do operations without interrupting the currently "open" repository
-# Note, git doesn't allow having the same branch checked out in multiple worktrees. https://stackoverflow.com/questions/41545293/branch-is-already-checked-out-at-other-location-in-git-worktrees
-# TODO note this also means you cant run muliple operations that use this on the same branch at once, i need to figure out a better way to do the wrapping, or just check if we're already in the same place...
-# This function should be paired with close_temp_worktree
-#   retFile=$(mktemp -t "worktree.XXXXXXXX")
-#   new_temp_worktree "$CHANNELS_BRANCH" "$retFile"
-#   tempLoc=$(cat retFile)
-#   close_temp_worktree "$tempLoc"
-# retFile is used because bash's way of returning values from functions sucks. This also sucks but at least I dont have to fight with I/O descriptors
-new_temp_worktree(){
-  local branch
-  branch="$1"
-  local retTarget
-  retTarget="$2"
-  local target
-  target=$(mktemp -d -t "worktree.XXXXXXXX") #should be an absolute path
-  git worktree add "$target"/"$branch" "$branch"
-  echo "$target"/"$branch" >> "$retTarget"
-  }
-
-# Generally paired with new_temp_worktree
-# Is used for cleaning up a temporary worktree
-close_temp_worktree(){
-  local target
-  target="$1"
-  git worktree remove "$target" #TODO error handling (probably just bail script) (see man page for failure cases; not clean repo)
-  rm -rf "$(dirname "$target")" #TODO this still doesnt remove the actual parent directory, how to get this to work?
-  }
-
-#///////////////////////////////////////////////////////////////////////////////
-#/// cannibalized from bootstrap
-#///////////////////////////////////////////////////////////////////////////////
 
 script_dir=$(realpath "$(dirname "$0")")
 build_system "$@"
