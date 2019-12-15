@@ -5651,6 +5651,8 @@ in
     ssh = openssh;
   };
 
+  pfetch = callPackage ../tools/misc/pfetch { };
+
   pfstools = callPackage ../tools/graphics/pfstools { };
 
   philter = callPackage ../tools/networking/philter { };
@@ -10189,6 +10191,8 @@ in
   maven = maven3;
   maven3 = callPackage ../development/tools/build-managers/apache-maven { };
 
+  mavproxy = python3Packages.callPackage ../applications/science/robotics/mavproxy { };
+
   go-md2man = callPackage ../development/tools/misc/md2man {};
 
   mage = callPackage ../development/tools/build-managers/mage { };
@@ -10337,8 +10341,6 @@ in
   pup = callPackage ../development/tools/pup { };
 
   puppet-lint = callPackage ../development/tools/puppet/puppet-lint { };
-
-  pyflame = callPackage ../development/tools/profiling/pyflame { };
 
   pyrseas = callPackage ../development/tools/database/pyrseas { };
 
@@ -20163,7 +20165,7 @@ in
       avahi = avahi-compat;
       jackSupport = config.mumble.jackSupport or false;
       speechdSupport = config.mumble.speechdSupport or false;
-      pulseSupport = config.pulseaudio or false;
+      pulseSupport = config.pulseaudio or stdenv.isLinux;
     }).mumble;
 
   mumble_overlay = callPackage ../applications/networking/mumble/overlay.nix {
@@ -23885,6 +23887,7 @@ in
     coqPackages_8_8  coq_8_8
     coqPackages_8_9  coq_8_9
     coqPackages_8_10 coq_8_10
+    coqPackages_8_11 coq_8_11
     coqPackages      coq
   ;
 
@@ -24228,8 +24231,8 @@ in
   ns-3 = callPackage ../development/libraries/science/networking/ns-3 { python = python3; };
 
   root = callPackage ../applications/science/misc/root {
+    python = python3;
     inherit (darwin.apple_sdk.frameworks) Cocoa OpenGL;
-    stdenv = if stdenv.cc.isClang then llvmPackages_5.stdenv else stdenv;
   };
 
   root5 = lowPrio (callPackage ../applications/science/misc/root/5.nix {
