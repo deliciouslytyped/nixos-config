@@ -4,3 +4,5 @@ TODO: script for generating a system branch / have it be automatic for activate
 branch selection
 tests
 value inspection without full rebuild / with repl
+
+design problem: whether you can build the configuration at any given time depends on whether a specific version of the channels branch is checked out - so it doesnt really make sense to decouple them like this...or at least, it wont be able to build with _any_ version
