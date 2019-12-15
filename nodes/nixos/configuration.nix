@@ -1,17 +1,24 @@
-# This module defines a small NixOS configuration.  It does not
-# contain any graphical stuff.
+args@{ pkgs, config, lib, ... }:
+let
+  #TODO feels hacky, basically gets the dir name, which is also the host name
+  hostname = builtins.baseNameOf ./.;
+  isVM = builtins.hasAttr "vm" config.system.build; #TODO find a more reliable way to do this
+in {
+  imports = [
+    ../../modules/private.nix
+    (import ./hardware.nix (args // { inherit isVM; }))
+    #(import ./partitions.nix (args // { inherit isVM; }))
 
-{ config, lib, ... }:
+    ];
 
-with lib;
+  nixpkgs.config.allowUnfree = true;
+  networking.hostId = config.mine.private."${hostname}".hostId; #TODO is this ok?
 
-{
-  environment.noXlibs = mkDefault true;
-
-  # This isn't perfect, but let's expect the user specifies an UTF-8 defaultLocale
-  i18n.supportedLocales = [ (config.i18n.defaultLocale + "/UTF-8") ];
-
-  documentation.enable = mkDefault false;
-
-  documentation.nixos.enable = mkDefault false;
-}
+  } // { #misc todo
+    system.copySystemConfiguration = true;
+    boot.kernelPackages = pkgs.linuxPackages_5_3;
+    #hardware stuff?
+    boot.initrd.availableKernelModules = [ "xhci_pci" "ehci_pci" "ahci" "uas" "sd_mod" ]; #TODO?
+    boot.kernelModules = [ "kvm-intel" ];
+    users.users.root.initialPassword = "test";
+  }

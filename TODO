@@ -1,2 +1,4 @@
 ram limited cron job to build updated system then tell user to switch
 todo: consider that i like pinning in nix more than with git
+
+put texlive, hplip, and vbox in heavy
